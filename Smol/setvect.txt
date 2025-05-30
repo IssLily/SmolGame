@@ -1,0 +1,13 @@
+
+    ORG &7FA0
+
+.start  SEI
+        LDA #&C0
+        STA &206
+        LDA #&7F
+        STA &207
+        CLI
+        RTS
+.end
+
+SAVE "SETVECT",start,end

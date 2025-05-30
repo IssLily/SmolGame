@@ -1,0 +1,97 @@
+            LDA #0
+			STA zpwork+2	\ the address of the collision map
+			LDA #&7C
+			STA zpwork+3
+
+						\ here is where we deal with collision detection.
+			LDA sprxt
+			LSR A
+			LSR A
+			LSR	A				
+			STA	zpwork				\ we now have the x index into the tilemap
+			TAX
+
+			LDA spryt
+			LSR A
+			LSR A
+			LSR A
+			STA zpwork+1
+			TAY
+
+			CLC
+.adlp		DEY				\ add 20 in a loop for the vertical component
+			BMI endadd1
+			LDA zpwork+2
+			ADC #20
+			STA zpwork+2
+			BCC adlp
+
+.ovrflw		INC zpwork+3
+			JMP adlp
+
+.endadd1	TXA				\ add the X value to get final address
+			CLC
+			ADC zpwork+2
+			STA zpwork+2
+			BCC skpover
+.ovrflw2	INC zpwork+3
+
+.skpover						\ now we have the tile that the top left of the player is currently in.		
+			LDY #0	
+			LDA (zpwork+2),y	\ the "current" tiles collision.
+			BEQ rghtchk			\ if the current tile has no collision, we just skip to the next bit
+			\ we now know that the tile the player is currently in is solid
+
+			LDX zpwork
+			INX
+			TXA
+			ASL A
+			ASL A
+			ASL A
+			STA sprxt
+			LDA #0
+			STA xvel
+
+			LDX zpwork+1
+			INX
+			TXA
+			ASL A
+			ASL A
+			ASL A
+			STA spryt
+			LDA #0
+			STA yvel
+
+.rghtchk	INY
+			LDA (zpwork+2),y		\ we load the tile to the right of the current one
+			BEQ dwnchk
+			LDA sprxt			\ at this point we know the tile to the right is solid
+			AND #7
+			BEQ resetx			\ if we're aligned to the tile then we're fine but should reset horizontal velocity.
+			LDA zpwork
+			ASL A
+			ASL A
+			ASL A
+			STA sprxt			\ we reset the x pos to be alligned with the tile boundaries.
+
+
+.resetx		LDA #0
+			STA xvel
+
+.dwnchk		LDY #20
+			LDA (zpwork+2),y
+			BEQ endchk
+			LDA  spryt
+			AND #7
+			BEQ resety
+			LDA zpwork+1
+			ASL A
+			ASL A
+			ASL A
+			STA spryt
+
+.resety		LDA #0
+			STA yvel
+			LDA #127
+			AND state
+			STA state		\ at this point you're standing on a tile, so we set the "Not in air" flag.

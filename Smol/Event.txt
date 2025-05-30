@@ -1,0 +1,129 @@
+sprx = &81
+spry = &82
+sprxt = &83		\ used to store the "next" positions.
+spryt = &84
+
+timer = &7B
+state = &7C \ bit 7 - jump status, bit 6 - sprite restarts, bit 0 - paused, bit 5 - direction of player, bit 4 - player currently attacking
+xvel = &7D
+xfr = &7E
+yvel = &7F
+yfr = &80
+
+sysvia = &FE40
+uservia = &FE60
+
+sprite = &5B00 
+input = &7FD0
+keytbl = &7FFB
+
+\ player animation pointer 0B02
+
+\ if vsync event is "disabled" it will be passed through to the 2nd level interrupt vector, which we intercept.
+\ bit 1 of system VIA interrupt flag register = vsync occured/
+	ORG &7D00
+.start
+
+.event	LDA &FC
+		PHA
+		TXA
+		PHA
+		TYA
+		PHA
+
+		LDA sysvia+13
+		AND #%00000010		\ checks sysvia interrupt flag to see if vsync occured
+		BNE noexit 
+		JMP chktimer			\ if not, exits routine
+.noexit	LDA #%00000010
+		STA sysvia+13		\ if so, clears flag by writing a 1 to the appropriate bit.
+
+		\ at this point we know vsync occured
+		
+		LDA #1
+		BIT state
+		BEQ restart
+		JMP exit
+
+.restart	LDA #64
+			BIT state
+			BEQ doot
+
+			LDA #00		\ defaults to the idle frame.
+			STA &85
+			STA &0B02
+			LDA #&63
+			STA &0B03
+			STA &86
+
+			LDA #&40
+			STA &0B04
+			
+			LDA sprxt
+			STA sprx
+			LDA spryt
+			STA spry
+			
+			LDA #&5A
+			STA &71
+			LDA #&80
+			STA &70
+
+			LDX sprx
+			LDY spry
+			LDA #0
+			JSR sprite
+			LDA state
+			AND #191
+			STA state
+
+
+.doot	LDX sprx
+		LDY spry
+		LDA #&5A
+		STA &71
+		LDA #&80
+		STA &70
+		LDA #128
+		JSR sprite
+
+		LDA &0B02
+		STA &85
+		LDA &0B03
+		STA &86
+		LDX sprxt
+		LDY spryt
+		STX sprx
+		STY spry
+		LDA #0
+		JSR sprite
+
+		LDA #&00
+		STA uservia+4		\ loading uservia timer 1 with 3ms, which will be used to trigger the 
+		LDA #&01			\ controls processing code
+		STA uservia+5
+		LDA #%11000000
+		STA uservia+14
+
+		INC timer
+
+		JMP exit
+
+.chktimer	LDA uservia+13
+			AND #%01000000
+			BNE noexit2
+			JMP exit
+.noexit2	LDA uservia+4	\ clears interrupt state
+
+INCLUDE "smol\control.txt"
+
+.exit	
+		PLA
+		TAY
+		PLA
+		TAX
+		PLA	
+		RTI
+.end
+
+SAVE "EVENT",start,end

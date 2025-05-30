@@ -1,0 +1,133 @@
+\ code that takes an array of tiles and a tileset and creates the background from it
+\screentbl = &85,&86     \ using RAM similar to in sprite routine
+zpwork = &87    \ workspace is the same as for sprites
+
+screentbl = &85
+
+\ screentbl format:
+\ a 16 x 20 (320 bytes) table of tiles
+
+\ a set of 8x8 tiles (each tile is 32 bytes) - &8E and &8F
+
+\ tileset in &8E,&8F
+\ tilemap in &85,&86
+
+
+\ background set format:
+\ set ID (byte), tileset addr (word), scr1 addr (word), colmap 1 addr (word), scr2 addr (word)...... etc 
+\ loaded to &6000, and can run to 68CF, can hold 5 screens
+
+\ upon entering, the routine should have access to a screen No. and Set no. in &85,&86
+
+
+    ORG &5C00
+
+.start          LDA &6000               \ load set ID currently loaded 
+                CMP &86
+                BEQ prelded             \ set is already loaded.
+
+                \ CODE GOES HERE FOR LOADING DIFFERENT SETS
+
+
+.prelded        \ temp!!!
+                LDA #&0B
+                STA &8E
+                LDA #&65
+                STA &8F
+
+
+                LDA #&03                  \ if its already loaded then tileset is already correct.
+                STA &87
+                LDA #&60
+                STA &88
+
+                LDA &85
+                ASL A                   \ multiply by 4 to get offset into table
+                ASL A
+                TAY 
+
+                LDA (&87),y             \ uses table to load data into correct locations.
+                STA &85
+                INY
+                LDA (&87),y
+                STA &86
+                INY 
+                LDA (&87),y
+                STA &0B00
+                INY
+                LDA (&87),y
+                STA &0B01
+                
+
+.drwstrt LDY #0
+        LDA #&30
+        STA zpwork+1      \ puts starting address for screen into bytes &87 and &88 
+        LDA #0
+        STA zpwork
+        STA zpwork+6
+        STA zpwork+5
+
+.tllp   LDA &8E
+        STA &89
+        LDA &8F
+        STA &8A
+
+        LDY zpwork+5
+        LDA (screentbl),y   \ byte from table in A - this is character number
+        TAY
+        LDA #32
+        STA zpwork+4
+        JSR adlp    \ adds 32 bytes to the start of the table
+                    \ now we have the address of the start of the tile we need to draw in zpwork+2,3
+        LDY #0
+.cpylp
+        LDA (zpwork+2),y
+        STA (zpwork),y
+        INY
+        CPY #32
+        BNE cpylp
+
+        CLC         \ adding 32 to the screen ram address for next tile
+        LDA #32
+        ADC zpwork
+        STA zpwork
+        BCS ovrflw
+
+.rtrn   CLC
+        INC zpwork+5
+        BEQ flgupd      \ if its overflowed, we have to set a flag, allowing us to count to 320
+        LDA zpwork+6
+        BEQ nxtlp
+        LDA zpwork+5
+        CMP #64
+        BEQ exit 
+
+.nxtlp  
+        JMP tllp
+
+.ovrflw INC zpwork+1
+        JMP rtrn
+
+.flgupd LDA #&FF
+        STA zpwork+6
+        INC screentbl+1
+        JMP nxtlp
+
+.exit   RTS
+
+.adlp   DEY
+        BMI nxt
+.add	CLC		
+	LDA zpwork+2
+	ADC zpwork+4
+	STA zpwork+2
+        BCC skp             
+        INC zpwork+3
+.skp    JMP adlp 
+.nxt    RTS
+
+
+.end
+
+
+SAVE "BACKG",start,end

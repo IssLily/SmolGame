@@ -1,0 +1,381 @@
+\ sprx = &81
+\ spry = &82
+\ sprxt = &83		\ used to store the "next" positions.
+\ spryt = &84
+
+\ state = &7C
+\ xvel = &7D
+\ xfr = &7E
+\ yvel = &7F
+\ yfr = &80
+
+zpwork = &87
+\ collisionmap pointer = &0b00
+\ 0b05 temp stores screen number to go to
+
+\ problem - animation gets stuck on one frame in the walk animation - both b04 and b02 get stuck. Why?
+
+panp = &0B02
+\ &0B04 is used as temp storage for the walk animation
+
+\ player frames are 32 bytes long starting from &6E00
+\ frames are currently in this order:
+\ idle, jump, walk1, walk2
+
+\ problem: top and bottom collision for a box seems to extend beyond the edge of the box
+\ however, it does not replenish your jump, so it cannot be *that* check
+
+
+.control	JSR &7FD0
+
+.ctrl		LDA keytbl
+			BPL chknxt2
+			LDA #2
+			STA xvel
+			LDA state
+			AND #223
+			STA state
+			LDA sprxt
+			CMP #152
+			BNE chknxt2
+			\ code for swapping to the screen to the right.
+			LDA #0
+			STA sprxt
+			LDA #1
+			STA &0B05
+.scrnchng	LDA state
+			ORA #1
+			STA state
+			JMP endmng
+
+.chknxt2	LDA keytbl+2
+			BPL chknxt
+			LDA #&FE		\ -2
+			STA xvel
+			LDA state
+			ORA #32
+			STA state
+			LDA sprxt
+			BNE chknxt
+			\ code for swapping to the screen to the left.
+			LDA #152
+			STA sprxt
+			LDA #0
+			STA &0B05
+			JMP scrnchng
+
+.chknxt		LDA keytbl + 3
+			BPL nopause
+			\ punch code!
+			LDA state
+			ORA #16
+			STA state
+
+
+.nopause	LDA keytbl+1
+			BPL animng
+			LDA state
+			AND #128
+			BNE animng
+			LDA #&FC		\ negative number
+			STA yvel
+			LDA state
+			ORA #128
+			STA state
+
+
+.animng		LDA #&6E
+			STA &0B03
+			LDA state
+			AND #32
+			BEQ lft
+			LDA #&6F
+			STA &0B03
+
+.lft		LDA state
+			AND #16
+			BEQ nopunch
+
+			\ punch code here!
+
+			JMP endmng
+
+.nopunch	LDA state
+			AND #128
+			BEQ noy
+							\ jumping animation
+			\ LDA #&20
+			\ STA &0B02
+			JMP xmng
+
+.noy		LDA xvel
+			BEQ nox
+							\ walking animation
+			LDA &0B04
+			STA &0B02
+
+			LDA timer
+			AND #&07
+			BNE noswitch
+			
+			LDA &0B04
+			CMP #&40
+			BEQ tswt
+			LDA #&40
+			STA &0B04
+			JMP noswitch
+			
+.tswt		LDA #&60
+			STA &0B04
+			
+.noswitch	JMP xmng
+
+.nox		LDA #00
+			STA &0B02
+
+.xmng		CLC
+			LDA xfr
+			ADC #90
+			STA xfr
+			BCC xapply
+			LDA xvel
+			BPL xdec
+
+			LDA xvel
+			BEQ xapply
+			INC xvel
+			JMP xapply
+
+.xdec		DEC xvel
+			BPL xapply
+			LDA #0
+			STA xvel
+
+.xapply		\ this is how we get the "1.5" pixels velocity. Yes its dumb.
+			LDA timer
+			AND #1
+			BEQ even 
+
+			LDA xvel
+			CMP #2
+			BNE adaw
+			DEC xvel
+			JMP even
+
+.adaw		CMP #&FE
+			BNE even
+			INC xvel
+
+
+.even		LDA xvel
+			BNE rawr
+			JMP ymng
+
+
+.rawr		STA zpwork+5
+			LDA sprxt
+			STA zpwork+8
+
+.aplp		LDA xvel		\ we apply the velocity in steps, and run collision code each time.
+			BMI ngad
+
+			INC sprxt
+			DEC xvel
+			JMP colchkx
+
+.ngad		DEC sprxt
+			INC xvel
+
+.colchkx	LDX sprxt
+.skpdec		LDY spryt
+			JSR tilecalc
+
+			LDY #0
+			LDA (zpwork+2),y
+			STA zpwork+6						\ here we check if the x coord is ok now that we've moved it
+			INY
+			LDA (zpwork+2),y
+			STA zpwork+7
+			LDY #20
+			LDA (zpwork+2),y
+			TAX
+			LDY #21
+			LDA (zpwork+2),y
+			TAY
+
+			LDA sprxt
+			AND #7
+			BEQ nxtxlp
+
+			LDA zpwork+6
+			BEQ chknxtx
+			JMP xfail
+
+
+.chknxtx	LDA zpwork+7
+			BNE xfail
+
+			LDA spryt
+			AND #7
+			BEQ nxtxlp
+
+			TYA
+			BNE xfail	
+
+			TXA
+			BNE xfail	
+
+.nxtxlp		LDA sprxt
+			STA zpwork+8
+
+			LDA xvel
+			BEQ endxapply
+			JMP aplp
+
+.xfail		
+			LDA zpwork+8
+			STA sprxt
+			LDA #0
+			STA xvel
+			JMP ymng
+
+.endxapply	LDA zpwork+5
+			STA xvel
+
+.ymng		
+			CLC
+			LDA yfr
+			ADC #80
+			STA yfr
+			BCC yapply
+
+			INC yvel
+
+
+.yapply		LDA yvel
+			BNE skpchk1
+			JMP endmng
+
+.skpchk1	STA zpwork+5
+			LDA spryt
+			STA zpwork+8
+
+.aplp2		LDA yvel		\ we apply the velocity in steps, and run collision code each time.
+			BMI ngad2
+
+			INC spryt
+			DEC yvel
+			JMP colchky
+
+.ngad2		DEC spryt
+			INC yvel
+
+.colchky	CLC
+			LDA sprxt
+			\ADC #4
+			TAX
+			LDY spryt
+			JSR tilecalc
+
+
+			LDY #0
+			LDA (zpwork+2),y
+			STA zpwork+6					\ here we check if the y coord is ok now that we've moved it
+			LDY #20
+			LDA (zpwork+2),y
+			STA zpwork+7
+			INY
+			LDA (zpwork+2),y
+			TAX
+			LDY #1
+			LDA (zpwork+2),y
+			TAY
+
+			LDA spryt
+			AND #7
+			BEQ nxtylp
+
+			LDA zpwork+6
+			BEQ chknxty
+
+			JMP yfail
+
+
+.chknxty	LDA zpwork+7
+			BEQ nxtychk
+			JMP rsjmp
+
+.nxtychk	LDA sprxt
+			AND #7
+			BEQ nxtylp
+			TXA
+			BNE rsjmp	
+
+			TYA
+			BNE yfail
+
+.nxtylp		LDA spryt
+			STA zpwork+8
+
+			LDA yvel
+			BEQ endyapply
+			JMP aplp2
+
+.rsjmp		LDA #127
+			AND state
+			STA state
+
+.yfail		LDA zpwork+8
+			STA spryt
+			LDA #0
+			STA yvel
+			JMP endmng
+
+.endyapply	LDA zpwork+5
+			STA yvel
+			JMP endmng
+
+.tilecalc	LDA &0B00
+			STA zpwork+2	\ the address of the collision map
+			LDA &0B01
+			STA zpwork+3
+							\ here is where we deal with collision detection.
+			TXA
+			LSR A
+			LSR A
+			LSR	A				
+			STA	zpwork				\ we now have the x index into the tilemap
+			TAX
+
+			LDA spryt
+			LSR A
+			LSR A
+			LSR A
+			STA zpwork+1
+			TAY
+
+.adlp2		CLC
+			DEY				\ add 20 in a loop for the vertical component
+			BMI endadd2
+			LDA zpwork+2
+			ADC #20
+			STA zpwork+2
+			BCC adlp2
+
+.ovrflw3	INC zpwork+3
+			JMP adlp2
+
+.endadd2	TXA				\ add the X value to get final address
+			CLC
+			ADC zpwork+2
+			STA zpwork+2
+			BCC skpover2
+.ovrflw4	INC zpwork+3
+
+.skpover2	RTS
+
+
+\ tilemap (collision) is 320 bytes, 20 x 16
+\ this tilemap is stored at 7C00
+
+.endmng

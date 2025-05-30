@@ -1,0 +1,40 @@
+sheila = &FE00
+
+\ code to handle the key input from the keyboard. Built on top of Elite's key scanning routine
+
+	ORG &7FD0	
+
+.start	LDY #3
+
+.keylp	LDA keytbl,y
+	AND #%01111111		\ resets the top bit of the key number in the table		
+	TAX		
+	JSR keychk		\ branches to keychk with the key we just erased the top bit of
+	STA keytbl,y
+	DEY
+	BPL keylp		\ loops through the keytbl until we're done.
+	RTS
+
+\ Key to scan for in X
+ 
+.keychk	LDA #%00000011		\ binary %00000011 to send to VIA
+	SEI			\ disable interrupts
+	STA sheila+&40		\ disables auto scan of keyboard (???)
+	LDA #%01111111		\ binary %01111111 which sets bit 7 to input, all others to output
+	STA sheila+&43		\ sending to VIA data direction register.
+
+	STX sheila+&4F		\ sends the key we want to scan for to output register A
+	LDX sheila+&4F		\ reads back register, only bit 7 may have changed. Bit 7 set if key pressed.
+
+	LDA #%00001011		\ binary %00001011 to reenable auto key scan.
+	STA sheila+&40
+
+	CLI			\ reenable interrupts
+	TXA		
+	RTS
+
+.keytbl		EQUB 50,102,65,66
+
+.end
+
+SAVE "INPUT",start,end

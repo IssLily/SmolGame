@@ -1,0 +1,159 @@
+
+crtcaddr = &FE00
+crtcdata = &FE01
+osbyte = &FFF4
+oswrch = &FFE3
+osword = &FFF1
+sprite_workspace = &0087
+sprite_table = &0085
+
+ptr = &0070
+
+
+ORG &5B00
+
+.sprite        \ the sprite plotting routine. 
+        \ sprite data is stored as a series of bytes across the way (LINE format from bbc2png)
+        \ preshifted version is also stored for speed.
+        \ tiles are done separately, and those are stored in BLOCK format from bbc2png
+
+        \ pointer to sprite should be in addresses &85,&86
+        \ X value in X
+        \ Y value in Y
+	STY sprite_workspace+1			
+
+        \ screen base address is 3000 for now
+        LDY #&30
+        STY sprite_workspace+3
+        LDY #00
+        STY sprite_workspace+2
+        STY sprite_workspace+5
+	STA sprite_workspace+8
+
+
+
+.spritelp       LDA sprite_workspace+1
+                LSR A    \ three logical shifts provides Y div 8
+                LSR A
+                LSR A
+                TAY
+                CLC
+       
+.blklp          DEY
+                BMI lpdn
+		LDA sprite_workspace+2
+		ADC #&80
+		STA sprite_workspace+2
+		LDA sprite_workspace+3  
+                ADC #02                 \ adds 512 for the 8 pixel "blocks" of the screen
+                STA sprite_workspace+3
+		JMP blklp
+           	
+        
+.lpdn   TXA     \ we divide X by two, thus adding 8 bytes for every 2 pixels.
+        LSR A
+        TAY
+        LDA #08
+        STA sprite_workspace+4
+        JSR adlp
+
+        LDA sprite_workspace+1  \ adding Y mod 8 to the address, giving Y within the character.
+        AND #7
+        STA sprite_workspace+4
+        LDY #1
+        JSR adlp    
+        \ byte we need to write is now in sprite_workspace+2,3
+        \ we are ready to get byte and write it.
+        
+	LDA sprite_workspace+2
+        STA sprite_workspace+6
+        LDA sprite_workspace+3
+        STA sprite_workspace+7
+        JMP vdone               \ jump to vdone as vertical calc already done for this
+
+.erase	LDA (ptr),y
+	STY sprite_workspace
+	LDY #0
+	STA (sprite_workspace+2),y
+	LDY sprite_workspace
+	JMP trns
+
+.drlp   LDA sprite_workspace+8
+	BMI erase
+	STY sprite_workspace
+	LDY #0
+	LDA (sprite_workspace+2),y
+	LDY sprite_workspace
+	STA (ptr),y	
+        LDA (sprite_table),y
+        BEQ trns        \ skip drawing pixel if the pixels value is 0 (effectively transparent) 
+        STY sprite_workspace
+        LDY #0
+        STA (sprite_workspace+2),y
+        LDY sprite_workspace
+
+.trns	CLC		
+	LDA sprite_workspace+2
+	ADC #8
+	STA sprite_workspace+2
+        BCC skp2             
+        INC sprite_workspace+3
+.skp2   INY
+        CPY sprite_workspace+5
+        BNE drlp
+
+        LDA sprite_workspace+5
+        CMP #32
+        BNE vloop
+
+.sprend RTS
+
+.vloop  LDA sprite_workspace+6
+        AND #7
+        CMP #7
+        BNE vadd1
+        CLC	
+        LDA sprite_workspace+6
+        ADC #&79
+        STA sprite_workspace+6	
+        LDA sprite_workspace+7
+        ADC #02        \ adding 512 by adding 2 to the high byte
+        STA sprite_workspace+7
+        JMP vdone
+
+.vadd1  CLC		
+        INC sprite_workspace+6
+        BCC vdone
+        INC sprite_workspace+7
+
+.vdone  CLC
+        LDA sprite_workspace+6
+        STA sprite_workspace+2
+        LDA sprite_workspace+7
+        STA sprite_workspace+3
+        LDA sprite_workspace+5
+        TAY
+        ADC #4
+        STA sprite_workspace+5
+        JMP drlp
+
+\ routine for adding number in sprite_workspace+4 to 16 bit number in sprite_workspace+2,3 Y number of times.
+\ loop counter in Y, number to add in sprite_workspace+4 
+.adlp   DEY
+        BMI nxt
+.add	CLC		
+	LDA sprite_workspace+2
+	ADC sprite_workspace+4
+	STA sprite_workspace+2
+        BCC skp             
+        INC sprite_workspace+3
+.skp    JMP adlp 
+.nxt    RTS
+
+
+
+        INCBIN "smol\sprite.bin"
+.end
+
+
+SAVE "SPRITE",sprite,end 

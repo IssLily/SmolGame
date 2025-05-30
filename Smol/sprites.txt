@@ -1,0 +1,34 @@
+ORG &6E00
+
+.start
+
+.right  INCBIN "smol\spriteidle.bin"
+        INCBIN "smol\spritejump.bin"
+        INCBIN "smol\spritewalk1.bin"
+        INCBIN "smol\spritewalk2.bin"
+        INCBIN "smol\spriteatck1.bin"
+        INCBIN "smol\spriteatck2.bin"
+
+
+        INCBIN "smol\spritewalk1.bin"
+        INCBIN "smol\spritewalk2.bin"
+
+.left   INCBIN "smol\spriteidlel.bin"
+        INCBIN "smol\spritejumpl.bin"
+        INCBIN "smol\spritewalk1l.bin"
+        INCBIN "smol\spritewalk2l.bin"
+        INCBIN "smol\spriteatck1l.bin"
+        INCBIN "smol\spriteatck2l.bin"
+
+
+        INCBIN "smol\spritewalk1l.bin"
+        INCBIN "smol\spritewalk2l.bin"
+
+
+
+
+
+.end
+
+
+SAVE "SDATA",start,end
