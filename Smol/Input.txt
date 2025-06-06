@@ -33,7 +33,7 @@ sheila = &FE00
 	TXA		
 	RTS
 
-.keytbl		EQUB 50,102,65,66
+.keytbl		EQUB 50,102,65,103
 
 .end
 

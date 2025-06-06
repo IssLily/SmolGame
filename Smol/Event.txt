@@ -17,11 +17,21 @@ sprite = &5B00
 input = &7FD0
 keytbl = &7FFB
 
-\ player animation pointer 0B02
+\ sprite storage slots start at 5A80 and run to 5B00 (currently 4 slots, will be six dont you worry)
+
+\ player animation pointer 0B02/0B03
+\ collision map pointer 0B00/&0B01
+\ next screen number 0B05	- probably will be removed at somepoint.
+\ walk animation variable 0B04
+\ sprite mem filled variable 0B06
+spslots = &0B06
+wpframe = &0B07
+\ &0B08-&0B0A reserved for weapon stuff
+\ last frames player animation frame pointer 
 
 \ if vsync event is "disabled" it will be passed through to the 2nd level interrupt vector, which we intercept.
 \ bit 1 of system VIA interrupt flag register = vsync occured/
-	ORG &7D00
+	ORG &7B00
 .start
 
 .event	LDA &FC
@@ -52,11 +62,11 @@ keytbl = &7FFB
 			LDA #00		\ defaults to the idle frame.
 			STA &85
 			STA &0B02
-			LDA #&63
+			LDA #&6E
 			STA &0B03
 			STA &86
 
-			LDA #&40
+			LDA #&00
 			STA &0B04
 			
 			LDA sprxt
@@ -78,7 +88,38 @@ keytbl = &7FFB
 			STA state
 
 
-.doot	LDX sprx
+.doot
+		LDA spslots
+		AND #%01000000	\ checking if attack sprite needs to be erased
+		BEQ nxtspr
+		LDA #&5A		\ storage pointer is second slot.
+		STA &71
+		LDA #&A0
+		STA &70
+		LDA &0B08
+		BEQ clcleft
+		SEC
+		LDA sprx
+		SBC #5
+		TAX
+		JMP ecnt
+
+.clcleft	CLC
+			LDA sprx
+			ADC #5
+			TAX
+.ecnt	LDY spry
+		LDA #128
+		JSR sprite		\ erasing sprite in slot 2 (weapon)
+
+		LDA state
+		AND #16
+		BNE nxtspr
+		LDA spslots
+		AND %10111111		\ IF state bit for attacking isn't set, then we clear it's slot filled status after erasing.
+		STA spslots
+
+.nxtspr	LDX sprx	\ player sprite erase
 		LDY spry
 		LDA #&5A
 		STA &71
@@ -87,7 +128,7 @@ keytbl = &7FFB
 		LDA #128
 		JSR sprite
 
-		LDA &0B02
+		LDA &0B02	\ player sprite draw
 		STA &85
 		LDA &0B03
 		STA &86
@@ -98,7 +139,43 @@ keytbl = &7FFB
 		LDA #0
 		JSR sprite
 
-		LDA #&00
+
+		LDA state	\ weapon sprite draw
+		AND #16
+		BEQ endv
+		LDA #&A0
+		STA &70
+
+		LDA #&60		\ we only need to change the low byte because high byte is set correctly when drawing sprite.
+		STA &85
+
+		LDA state
+		AND #32
+		STA &0B08
+		BEQ clc2left
+		SEC
+		LDA sprx
+		SBC #5
+		TAX
+		JMP dcnt
+
+.clc2left	CLC
+			LDA sprx
+			ADC #5
+			TAX
+.dcnt	LDY spry
+		LDA #0 
+		JSR sprite
+		LDA spslots
+		ORA #%01000000
+		STA spslots
+
+
+
+
+
+
+.endv	LDA #&00
 		STA uservia+4		\ loading uservia timer 1 with 3ms, which will be used to trigger the 
 		LDA #&01			\ controls processing code
 		STA uservia+5

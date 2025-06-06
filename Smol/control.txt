@@ -35,13 +35,26 @@ panp = &0B02
 			LDA state
 			AND #223
 			STA state
+
+			LDA state
+			AND #16
+			BEQ atkskp2
+
 			LDA sprxt
+			CMP #147
+			BEQ chngr
+			CMP #146
+			BEQ chngr
+
+.atkskp2	LDA sprxt
 			CMP #152
 			BEQ chngr
 			CMP #153
 			BEQ chngr
 			JMP chknxt2
 .chngr		\ code for swapping to the screen to the right.
+			LDA #0
+			STA spslots
 			LDA #0
 			STA sprxt
 			LDA #1
@@ -58,12 +71,25 @@ panp = &0B02
 			LDA state
 			ORA #32
 			STA state
+
+			LDA state
+			AND #16
+			BEQ atkskp
+
 			LDA sprxt
+			CMP #5
+			BEQ chnglft
+			CMP #6
+			BEQ chnglft
+
+.atkskp		LDA sprxt
 			BEQ chnglft
 			CMP #1
 			BEQ chnglft
 			JMP chknxt
 .chnglft	\ code for swapping to the screen to the left.
+			LDA #0
+			STA spslots
 			LDA #152
 			STA sprxt
 			LDA #0
@@ -72,10 +98,25 @@ panp = &0B02
 
 .chknxt		LDA keytbl + 3
 			BPL nopause
-			\ punch code!
+			CLC
+			LDA state
+			AND #32
+			BNE lftchk
+
+			LDA sprxt
+			CMP #147
+			BCC yespunch
+			JMP nopause
+
+.lftchk		LDA sprxt
+			CMP #5
+			BCC nopause
+
+.yespunch	\ punch code!
 			LDA state
 			ORA #16
 			STA state
+			
 
 
 .nopause	LDA keytbl+1
@@ -104,7 +145,7 @@ panp = &0B02
 
 			\ punch code here!
 
-			JMP endmng
+		
 
 .nopunch	LDA state
 			AND #128
