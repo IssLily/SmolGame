@@ -1,0 +1,23 @@
+technical things to do:
+
+- animation for sprites (capability + PC animations)
+- do the boundary checking on the screen
+- implement changing screens
+- figure out a good method for both sound effects and music
+- figure out a small way to do cutscenes (scripting?)
+- implement items/inventory
+- implement pausing and the pause screen.
+- implement the player attack (punch as default)
+- implement an enemy handler (sprite drawing plus behaviour)
+
+non-technical things to do:
+- player character artwork
+- figure out an idea of the narrative + lore - good start made
+- work on the world-map and how stuff fits together
+- work out some exciting set pieces that are achievable within hardware constraints.
+
+
+all of these things are in no particular order.
+
+BBC Master bonuses:
+ - make movement smoother with extra versions of sprites.

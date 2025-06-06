@@ -11,26 +11,26 @@ CUSTOM-COLOUR feffff 15
 
 IMAGE img\Player1.png
 CREATE-FILE smol\spriteidle.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
-IMAGE img\Player4.png
-CREATE-FILE smol\spritejump.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
 IMAGE img\Player2.png
 CREATE-FILE smol\spritewalk1.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
 IMAGE img\Player3.png
 CREATE-FILE smol\spritewalk2.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
-IMAGE img\Player5.png
+IMAGE img\Player4.png
 CREATE-FILE smol\spriteatck1.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
-IMAGE img\Player6.png
+IMAGE img\Player5.png
 CREATE-FILE smol\spriteatck2.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
+IMAGE img\Player6.png
+CREATE-FILE smol\spriteatck3.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
 
 IMAGE img\Player7.png
 CREATE-FILE smol\spriteidlel.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
-IMAGE img\Player10.png
-CREATE-FILE smol\spritejumpl.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
 IMAGE img\Player8.png
 CREATE-FILE smol\spritewalk1l.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
 IMAGE img\Player9.png
 CREATE-FILE smol\spritewalk2l.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
-IMAGE img\Player11.png
+IMAGE img\Player10.png
 CREATE-FILE smol\spriteatck1l.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
-IMAGE img\Player12.png
+IMAGE img\Player11.png
 CREATE-FILE smol\spriteatck2l.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE
+IMAGE img\Player12.png
+CREATE-FILE smol\spriteatck3l.bin FROM-DATA 0 0 8 8 1 DATA-ORDER LINE

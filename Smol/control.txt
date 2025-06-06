@@ -37,8 +37,11 @@ panp = &0B02
 			STA state
 			LDA sprxt
 			CMP #152
-			BNE chknxt2
-			\ code for swapping to the screen to the right.
+			BEQ chngr
+			CMP #153
+			BEQ chngr
+			JMP chknxt2
+.chngr		\ code for swapping to the screen to the right.
 			LDA #0
 			STA sprxt
 			LDA #1
@@ -56,8 +59,11 @@ panp = &0B02
 			ORA #32
 			STA state
 			LDA sprxt
-			BNE chknxt
-			\ code for swapping to the screen to the left.
+			BEQ chnglft
+			CMP #1
+			BEQ chnglft
+			JMP chknxt
+.chnglft	\ code for swapping to the screen to the left.
 			LDA #152
 			STA sprxt
 			LDA #0
@@ -119,13 +125,13 @@ panp = &0B02
 			BNE noswitch
 			
 			LDA &0B04
-			CMP #&40
+			CMP #&20
 			BEQ tswt
-			LDA #&40
+			LDA #&20
 			STA &0B04
 			JMP noswitch
 			
-.tswt		LDA #&60
+.tswt		LDA #&40
 			STA &0B04
 			
 .noswitch	JMP xmng

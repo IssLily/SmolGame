@@ -1,0 +1,22 @@
+collision detection (against tilemap):
+
+we take the current x and y coordinate. We can divide both by 8 to give
+a tile we're "currently" in.
+
+If X mod 8 is not 0, we are also partially in the tile to the right
+If y mod 8 is not 0, we are also partially in the tile to the bottom
+
+if the Y coord mod 8 is >3 then we snap to the top by adding 1 and 
+multiplying by 8
+
+if the Y coord mod 8 is < 4 then we snap to the bottom by not adding 1
+and multiplying by 8
+
+if the x coord mod 8 is > 3 then we snap to the left by not adding 1 and
+multiplying by 8.
+
+If the x coord mod 8 is <4 then we snap to the right by adding 1 and
+multiplying by 8.
+
+This is all provided the appropriate tiles are solid.
+
